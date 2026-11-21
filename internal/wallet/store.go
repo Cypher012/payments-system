@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Cypher012/payments-system/internal/platform/apperr"
 	"github.com/Cypher012/payments-system/internal/wallet/walletdb"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -29,8 +30,9 @@ const (
 	Credit = walletdb.EntryDirectionCredit
 )
 
-// ErrAccountNotFound is returned when an account does not exist.
-var ErrAccountNotFound = errors.New("wallet: account not found")
+// ErrAccountNotFound is returned when an account does not exist. It wraps
+// apperr.ErrNotFound, so the HTTP layer answer with 404
+var ErrAccountNotFound = fmt.Errorf("account: %w", apperr.ErrNotFound)
 
 // Store is the wallet's data access layer, often called a repository. It wraps
 // the sqlc queries, and owns database transactions.

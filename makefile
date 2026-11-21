@@ -1,7 +1,7 @@
-# Database migration. Pick another service with SERVICE=auth, for example.
-SERVICE  ?= wallet
-DB_URL   ?= postgres://payments:payments@localhost:5432/$(SERVICE)?sslmode=disable
-MIGRATE  ?= migrate -path db/$(SERVICE)/migrations -database "$(DB_URL)"
+# Database migrations. Pick another service with SERVICE=auth, for example.
+SERVICE ?= wallet
+DB_URL  ?= postgres://payments:payments@localhost:5432/$(SERVICE)?sslmode=disable
+MIGRATE := migrate -path db/$(SERVICE)/migrations -database "$(DB_URL)"
 
 .PHONY: migrate-up migrate-down migrate-version migrate-new
 
@@ -16,7 +16,9 @@ migrate-version:
 
 migrate-new:
 	@test -n "$(name)" || (echo "usage: make migrate-new name=add_something" && exit 1)
-	@$(MIGRATE) create -ext sql -dir db/$(SERVICE)/migrations -seq "$(name)"
+	migrate create -ext sql -dir db/$(SERVICE)/migrations -seq $(name)
+
+.PHONY: generate test
 
 # Regenerate the Go code for every service's SQL queries.
 generate:
@@ -28,3 +30,12 @@ export WALLET_TEST_DATABASE_URL
 
 test:
 	@go test -count=1 $(TESTFLAGS) ./...
+
+.PHONY: run-wallet
+
+# Run the wallet service against the local database, stamped with a git version.
+VERSION ?= $(shell git describe --always --dirty)
+
+run-wallet:
+	@go build -ldflags "-X main.version=$(VERSION)" -o bin/wallet ./cmd/wallet
+	@WALLET_DATABASE_URL="$(DB_URL)" ./bin/wallet
